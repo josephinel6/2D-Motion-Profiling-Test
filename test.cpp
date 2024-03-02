@@ -207,6 +207,7 @@ private:
 
 public:
     std::vector<Position> points;
+    std::vector<std::vector<double>> velocities;
     TwoDimensionalProfile(CubicBezier cubicBezier, float deltaDistance, double maxVelocity, double maxAcceleration);
 };
 
@@ -236,12 +237,12 @@ double CubicBezier::getCurvature(double t)
 
 double TwoDimensionalProfile::getLinearVelocity(double distance)
 {
-    if (distance < accelEnd)
+    if (distance <= accelEnd)
     {
         std::cout << "Accell" << sqrt(2 * maxAccel * distance) << std::endl;
         return sqrt(2 * maxAccel * distance);
     }
-    else if (distance < cruiseEnd)
+    else if (distance <= cruiseEnd)
     {
         std::cout << "Max Vel" << maxVel << std::endl;
         return maxVel;
@@ -255,7 +256,8 @@ double TwoDimensionalProfile::getLinearVelocity(double distance)
 
 void TwoDimensionalProfile::setVelocityProfile()
 {
-    double accelDist = maxVel * (maxVel / maxAccel);
+    double accelDist = pow(maxVel, 2) / (2 * maxAccel);
+    // double accelDist = maxVel * (maxVel / maxAccel);
     // if (sqrt(2 * maxAccel * accelDist) > maxVel)
     // {
     //     maxAccel = sqrt(maxVel) / (2 * accelDist);
@@ -282,6 +284,18 @@ void TwoDimensionalProfile::setVelocityProfile()
     std::cout << " max vel " << maxVel;
 }
 
+int sign(double number) //* returns sign (-1, 0, or 1)
+{
+    if (number >= 0)
+    {
+        return 1;
+    }
+    else
+    {
+        return -1;
+    }
+}
+
 std::vector<Position> TwoDimensionalProfile::calculatePoints()
 {
     int length = cubicBezier.length;
@@ -301,10 +315,12 @@ std::vector<Position> TwoDimensionalProfile::calculatePoints()
         // linearVelocity = sqrt(pow(linearVelocity, 2) + cubicBezier.getAcceleration(trueT).heading * 2 * length * trueT);
         linearVelocity = getLinearVelocity(length * trueT);
 
-        // double maxVelocityAroundCurve = sqrt(9.8 * (1 / cubicBezier.getCurvature(trueT)));
+        double maxVelocityAroundCurve = (9.8 * fabs(cubicBezier.getCurvature(trueT)));
+        std::cout << "Max around curve " << maxVelocityAroundCurve << std::endl;
+        angularVelocity = sign(angularVelocity) * std::min(fabs(angularVelocity), maxVelocityAroundCurve);
         // linearVelocity = std::max(maxVelocityAroundCurve, linearVelocity);
 
-        point.heading = linearVelocity;
+        velocities.push_back({linearVelocity, angularVelocity});
 
         // double linearVelocity = sqrt(2 * cubicBezier.getAcceleration(t) * length * trueT);
 
@@ -324,7 +340,7 @@ int main()
     CubicBezier cubicBezier(Position(0, 0, 0), Position(24, 24, 0), Position(24, -24, 0), Position(50, 0, 0));
     // std::cout << cubicBezier.getPoint(NUMBER).x << ", " << cubicBezier.getPoint(NUMBER).y << std::endl;
     // std::cout << cubicBezier.getVelocity(NUMBER) << std::endl;
-    TwoDimensionalProfile twoDimensionalProfile(cubicBezier, 1, 600, 10000);
+    TwoDimensionalProfile twoDimensionalProfile(cubicBezier, 1, 600, 30000);
     for (int i = 0; i < twoDimensionalProfile.points.size(); i++)
     {
         // std::cout << twoDimensionalProfile.points[i].x << ", " << twoDimensionalProfile.points[i].y << ", " << twoDimensionalProfile.points[i].heading << std::endl;
