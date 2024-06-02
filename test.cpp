@@ -191,6 +191,8 @@ Position CubicBezier::getAcceleration(double t)
 CubicBezier::CubicBezier()
 {
 }
+
+
 class TwoDimensionalProfile
 {
 private:
